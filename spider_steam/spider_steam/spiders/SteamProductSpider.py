@@ -1,16 +1,5 @@
 import scrapy
-from urllib.parse import urlencode
 from spider_steam.items import SpiderSteamItem
-import requests
-from bs4 import BeautifulSoup
-
-API = 'ae8eb92525211569564a39441dd68def'
-
-
-def get_url(url):
-    payload = {'api_key': API, 'url': url}
-    proxy_url = 'https://api.scraperapi.com/?' + urlencode(payload)
-    return proxy_url
 
 
 class SteamproductspiderSpider(scrapy.Spider):
@@ -26,7 +15,6 @@ class SteamproductspiderSpider(scrapy.Spider):
 
     def start_requests(self):
         for url in self.start_urls:
-            # yield scrapy.Request(url=get_url(url), callback=self.parse_for_page)
             yield scrapy.Request(url=url, callback=self.parse_for_page)
 
     def parse_for_page(self, response):
@@ -34,8 +22,6 @@ class SteamproductspiderSpider(scrapy.Spider):
         for link in games:
             if 'agecheck' not in link:
                 yield scrapy.Request(link, callback=self.parse_for_game)
-            # yield scrapy.Request(url=get_url(link), callback=self.parse_for_game)
-            # yield scrapy.Request(url=link, callback=self.parse_for_game)
 
     def parse_for_game(self, response):
         items = SpiderSteamItem()
@@ -48,6 +34,10 @@ class SteamproductspiderSpider(scrapy.Spider):
         product_price = response.xpath('//div[@class="game_purchase_price price"]/text()')[0].extract()
 
         product_date_of_reliase = ''.join(product_date_of_reliase).strip()
+        platforms = set()
+        for platform in response.css('div').xpath('@data-os'):
+            platforms.add(platform.get().strip())
+
         if product_name != '' and product_date_of_reliase > '2000':
             items['product_name'] = ''.join(product_name).strip().replace('™', '')
             items['product_category'] = ', '.join(product_category).strip()
@@ -57,5 +47,5 @@ class SteamproductspiderSpider(scrapy.Spider):
             items['product_developer'] = ', '.join(map(lambda x: x.strip(), product_developer)).strip()
             items['product_tags'] = ', '.join(map(lambda x: x.strip(), product_tags)).strip()
             items['product_price'] = ''.join(product_price).strip().replace('уб', '')
-            items['product_platforms'] = ' '
+            items['product_platforms'] = list(platforms)
         yield items

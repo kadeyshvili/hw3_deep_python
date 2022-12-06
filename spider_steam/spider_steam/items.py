@@ -9,3 +9,4 @@ class SpiderSteamItem(scrapy.Item):
     product_developer = scrapy.Field()
     product_tags = scrapy.Field()
     product_price = scrapy.Field()
+    product_platforms = scrapy.Field()
